@@ -12,15 +12,29 @@ namespace LowLevelDesign.Concerto
 {
     internal static class Program
     {
+        private static readonly Assembly AppAssembly = Assembly.GetExecutingAssembly();
+        private static readonly AssemblyName AppName = AppAssembly.GetName();
+        
+        private class ConcertoUsageException : Exception
+        {
+            public ConcertoUsageException(string message) : base(message) { }
+        }
+        
         private static void SaveCertificate(CertificateWithPrivateKey certWithKey,
             string directory, string nameWithoutExtension)
         {
-            using (var writer = new StreamWriter(Path.Combine(directory, $"{nameWithoutExtension}.pem"))) {
+            var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pem");
+            var keyFilePath = Path.Combine(directory, $"{nameWithoutExtension}.key");
+            if (File.Exists(certFilePath) || File.Exists(keyFilePath)) {
+                throw new ConcertoUsageException("Cert or key file already exists. Please remove it or switch directories.");
+            }
+            
+            using (var writer = new StreamWriter(certFilePath)) {
                 var pem = new PemWriter(writer);
                 pem.WriteObject(certWithKey.Certificate);
             }
 
-            using (var writer = new StreamWriter(Path.Combine(directory, $"{nameWithoutExtension}.key"))) {
+            using (var writer = new StreamWriter(keyFilePath)) {
                 var pem = new PemWriter(writer);
                 pem.WriteObject(certWithKey.PrivateKey);
             }
@@ -33,7 +47,8 @@ namespace LowLevelDesign.Concerto
             var keyPath = Path.Combine(directory, baseName + ".key");
 
             if (!File.Exists(keyPath) || !File.Exists(certPath)) {
-                Console.WriteLine($"[{nameof(ReadOrCreateCA)}] missing CA certificate or key, creating a new one");
+                Console.WriteLine($"[{nameof(ReadOrCreateCA)}] missing CA certificate or key, creating a new one: " +
+                                  $"{Path.Combine(directory, baseName + ".pem")}");
                 var certWithKey = CertificateCreator.CreateCACertificate();
                 SaveCertificate(certWithKey, directory, baseName);
                 return certWithKey;
@@ -53,25 +68,44 @@ namespace LowLevelDesign.Concerto
                 privateKey
             );
         }
+        
+        private static string SanitizeFileName(string host)
+        {
+            return host.Replace("*", "_all")
+                       .Replace(":", "_")
+                       .Replace("/", "_");
+        }
 
         private static void ShowInfoAndUsage()
         {
-            Console.WriteLine("concerto v{0} - creates certificates for development purposes",
-                Assembly.GetExecutingAssembly().GetName().Version);
-            var customAttrs = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyCompanyAttribute), true);
+            Console.WriteLine($"{AppName.Name} v{AppName.Version} - creates certificates for development purposes");
+            var customAttrs = AppAssembly.GetCustomAttributes(typeof(AssemblyCompanyAttribute), true);
             Debug.Assert(customAttrs.Length > 0);
             Console.WriteLine($"Copyright (C) {DateTime.Today.Year} {((AssemblyCompanyAttribute)customAttrs[0]).Company}");
             Console.WriteLine();
-            Console.WriteLine("Usage:");
+            Console.WriteLine("Certificates are always created in the current directory. If Root CA does ");
+            Console.WriteLine("exist, it will be automatically created.");
             Console.WriteLine();
-            // FIXME
-
+            Console.WriteLine("Usage examples:");
+            Console.WriteLine();
+            Console.WriteLine($"  $ {AppName.Name} www.test.com");
+            Console.WriteLine("  Creates a certificate for www.test.com.");
+            Console.WriteLine();
+            Console.WriteLine($"  $ {AppName.Name} -int my-intermediate");
+            Console.WriteLine("  Creates an intermediate certificate.");
+            Console.WriteLine();
+            Console.WriteLine($"  $ {AppName.Name} -ca my-intermediate.pem www.test.com");
+            Console.WriteLine("  Creates a certificate for www.test.com and signs it with the my-intermediate CA.");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("  -ca <path-to-cert>     Specifies which CA certificate to use.");
+            Console.WriteLine("  -help                  Shows this help screen.");
             Console.WriteLine();
         }
 
         private static int Main(string[] args)
         {
-            var flags = new[] { "chain", "int", "h", "?", "help" };
+            var flags = new[] { "int", "h", "?", "help" };
             var parsedArgs = CommandLineHelper.ParseArgs(flags, args);
 
             if (parsedArgs.ContainsKey("h") || parsedArgs.ContainsKey("help") ||
@@ -81,7 +115,7 @@ namespace LowLevelDesign.Concerto
             }
 
             try {
-                var rootCertWithKey = ReadOrCreateCA(parsedArgs.TryGetValue("rootCA",
+                var rootCertWithKey = ReadOrCreateCA(parsedArgs.TryGetValue("ca",
                     out var rootCertPath)
                     ? rootCertPath
                     : Path.Combine(Environment.CurrentDirectory, "rootCA.pem"));
@@ -105,16 +139,24 @@ namespace LowLevelDesign.Concerto
                     }
 
                     var cert = CertificateCreator.CreateCertificate(rootCertWithKey, hosts);
-                    SaveCertificate(cert, Environment.CurrentDirectory, hosts[0]);
+                    SaveCertificate(cert, Environment.CurrentDirectory, SanitizeFileName(hosts[0]));
                 }
                 return 0;
-            } catch (CommandLineArgumentException ex) {
+            } catch (Exception ex) when (ex is CommandLineArgumentException || ex is ConcertoUsageException) {
                 Console.WriteLine($"[error] {ex.Message}");
-                Console.WriteLine();
-                ShowInfoAndUsage();
+                Console.WriteLine($"        {AppName.Name} -help to see usage info.");
                 return 1;
             } catch (Exception ex) {
                 Console.WriteLine($"[critical] {ex.Message}");
+                Console.WriteLine("Please report this error at https://github.com/lowleveldesign/concerto/issues, " +
+                                  "providing the below details.");
+                Console.WriteLine("=== Details ===");
+                Console.WriteLine(ex);
+                Console.WriteLine();
+                Console.WriteLine($"Command line: {Environment.CommandLine}");
+                Console.WriteLine($"OS: {Environment.OSVersion}");
+                Console.WriteLine($"x64 (OS): {Environment.Is64BitOperatingSystem}");
+                Console.WriteLine($"x64 (Process): {Environment.Is64BitProcess}");
                 return 1;
             }
         }
