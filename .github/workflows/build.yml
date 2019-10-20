@@ -14,4 +14,11 @@ jobs:
       with:
         dotnet-version: '3.0.100' # SDK Version to use.
     
-    - run: dotnet build concerto.csproj
+    - run: dotnet publish -r win-x64 -c release
+
+    - run: dir /S
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: concerto-win64
+        path: bin/release/netcoreapp3.0/win-x64/native
