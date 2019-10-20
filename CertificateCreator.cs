@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Operators;
+using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Prng;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
@@ -34,11 +36,18 @@ namespace LowLevelDesign.Concerto
         private static readonly string MachineName = Environment.MachineName;
         private static readonly string UserName = Environment.UserName;
 
-        private static AsymmetricCipherKeyPair GenerateKeyPair(SecureRandom secureRandom, int strength)
+        private static AsymmetricCipherKeyPair GenerateRsaKeyPair(SecureRandom secureRandom, int strength)
         {
             var keyParameters = new KeyGenerationParameters(secureRandom, strength);
             var keyPairGenerator = new RsaKeyPairGenerator();
             keyPairGenerator.Init(keyParameters);
+            return keyPairGenerator.GenerateKeyPair();
+        }
+        
+        private static AsymmetricCipherKeyPair GenerateEllipticCurveKeyPair(SecureRandom secureRandom)
+        {
+            var keyPairGenerator = new ECKeyPairGenerator();
+            keyPairGenerator.Init(new ECKeyGenerationParameters(SecObjectIdentifiers.SecP256r1, secureRandom));
             return keyPairGenerator.GenerateKeyPair();
         }
 
@@ -55,7 +64,7 @@ namespace LowLevelDesign.Concerto
             var secureRandom = new SecureRandom(randomGenerator);
 
             // key
-            var keyPair = GenerateKeyPair(secureRandom, 3072);
+            var keyPair = GenerateRsaKeyPair(secureRandom, 3072);
 
             var certificateGenerator = new X509V3CertificateGenerator();
 
@@ -94,23 +103,24 @@ namespace LowLevelDesign.Concerto
         public static CertificateWithPrivateKey CreateCertificate(
             CertificateWithPrivateKey issuer,
             string[] hosts,
-            bool client = false)
+            bool client = false,
+            bool ecdsa = false)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var secureRandom = new SecureRandom(randomGenerator);
 
             // generate the key
-            var keyPair = GenerateKeyPair(secureRandom, 2048);
+            var keyPair = ecdsa ? GenerateEllipticCurveKeyPair(secureRandom) : 
+                GenerateRsaKeyPair(secureRandom, 2048);
 
             var certificateGenerator = new X509V3CertificateGenerator();
 
             // serial number
             certificateGenerator.SetSerialNumber(GenerateRandomSerialNumber(secureRandom));
 
-            // set subject and issuer
+            // set subject
             var subject = new X509Name($"O=concerto development,OU={UserName}@{MachineName},CN={hosts[0]}");
             certificateGenerator.SetSubjectDN(subject);
-            certificateGenerator.SetIssuerDN(issuer.Certificate.SubjectDN);
 
             certificateGenerator.SetNotAfter(DateTime.UtcNow.AddYears(10));
             certificateGenerator.SetNotBefore(DateTime.UtcNow);
@@ -120,6 +130,13 @@ namespace LowLevelDesign.Concerto
             // not CA
             certificateGenerator.AddExtension(X509Extensions.BasicConstraints.Id, true,
                 new BasicConstraints(false));
+            
+            // set issuer data
+            certificateGenerator.SetIssuerDN(issuer.Certificate.SubjectDN);
+            certificateGenerator.AddExtension(X509Extensions.AuthorityKeyIdentifier, false,
+                new AuthorityKeyIdentifier(
+                    SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(issuer.Certificate.GetPublicKey())));
+            
 
             // usage
             certificateGenerator.AddExtension(X509Extensions.KeyUsage, true,
