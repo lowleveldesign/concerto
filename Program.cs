@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.OpenSsl;
@@ -12,34 +13,44 @@ namespace LowLevelDesign.Concerto
     {
         private static readonly Assembly AppAssembly = Assembly.GetExecutingAssembly();
         private static readonly AssemblyName AppName = AppAssembly.GetName();
-        
+
         private class ConcertoUsageException : Exception
         {
             public ConcertoUsageException(string message) : base(message) { }
         }
-        
-        private static void SavePemCertificate(CertificateWithPrivateKey certWithKey,
-            string directory, string nameWithoutExtension)
+
+        private static void SavePemCertificate(CertificateChainWithPrivateKey certChainWithKey,
+            string directory, string nameWithoutExtension, bool chain)
         {
             var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pem");
+            var certChainFilePath = Path.Combine(directory, $"{nameWithoutExtension}-chain.pem");
             var keyFilePath = Path.Combine(directory, $"{nameWithoutExtension}.key");
             if (File.Exists(certFilePath) || File.Exists(keyFilePath)) {
                 throw new ConcertoUsageException("Cert or key file already exists. Please remove it or switch directories.");
             }
-            
+
             using (var writer = new StreamWriter(certFilePath)) {
                 var pem = new PemWriter(writer);
-                pem.WriteObject(certWithKey.Certificate);
+                Debug.Assert(certChainWithKey.Certificates.Length > 0);
+                pem.WriteObject(certChainWithKey.Certificates[0]);
+            }
+
+            if (chain) {
+                using var writer = new StreamWriter(certChainFilePath);
+                var pem = new PemWriter(writer);
+                foreach (var cert in certChainWithKey.Certificates) {
+                    pem.WriteObject(cert);
+                }
             }
 
             using (var writer = new StreamWriter(keyFilePath)) {
                 var pem = new PemWriter(writer);
-                var keyPkcs8Format = new Pkcs8Generator(certWithKey.PrivateKey);
+                var keyPkcs8Format = new Pkcs8Generator(certChainWithKey.PrivateKey);
                 pem.WriteObject(keyPkcs8Format);
             }
         }
 
-        private static CertificateWithPrivateKey ReadOrCreateCA(string certPath)
+        private static CertificateChainWithPrivateKey ReadOrCreateCA(string certPath)
         {
             var directory = Path.GetDirectoryName(certPath) ?? Environment.CurrentDirectory;
             var baseName = Path.GetFileNameWithoutExtension(certPath);
@@ -49,7 +60,7 @@ namespace LowLevelDesign.Concerto
                 Console.WriteLine($"[info] missing CA certificate or key, creating a new one: " +
                                   $"{Path.Combine(directory, baseName + ".pem")}");
                 var certWithKey = CertificateCreator.CreateCACertificate();
-                SavePemCertificate(certWithKey, directory, baseName);
+                SavePemCertificate(certWithKey, directory, baseName, false);
                 return certWithKey;
             }
 
@@ -58,17 +69,16 @@ namespace LowLevelDesign.Concerto
             var keyPair = (AsymmetricCipherKeyPair)pemReader.ReadObject();
 
             using var certFileStream = File.OpenRead(certPath);
-            return new CertificateWithPrivateKey(
-                new X509CertificateParser().ReadCertificate(certFileStream),
-                keyPair.Private
-            );
+            var certificates = new X509CertificateParser().ReadCertificates(
+                certFileStream).OfType<X509Certificate>().ToArray();
+            return new CertificateChainWithPrivateKey(certificates, keyPair.Private);
         }
-        
+
         private static string SanitizeFileName(string host)
         {
             return host.Replace("*", "_all")
-                       .Replace(":", "_")
-                       .Replace("/", "_");
+                .Replace(":", "_")
+                .Replace("/", "_");
         }
 
         private static void ShowInfoAndUsage()
@@ -95,6 +105,7 @@ namespace LowLevelDesign.Concerto
             Console.WriteLine("Options:");
             Console.WriteLine("  -ca <path-to-cert>     Specifies which CA certificate to use.");
             Console.WriteLine("  -client                Allow a client to authenticate using the certificate.");
+            Console.WriteLine("  -chain                 Create a .pem file with the certificate chain.");
             Console.WriteLine("  -ecdsa                 Use Elliptic Curve key instead of RSA.");
             Console.WriteLine("  -help                  Shows this help screen.");
             Console.WriteLine();
@@ -102,7 +113,7 @@ namespace LowLevelDesign.Concerto
 
         private static int Main(string[] args)
         {
-            var flags = new[] { "int", "client", "ecdsa", "h", "?", "help" };
+            var flags = new[] { "int", "client", "ecdsa", "chain", "h", "?", "help" };
             var parsedArgs = CommandLineHelper.ParseArgs(flags, args);
 
             if (parsedArgs.ContainsKey("h") || parsedArgs.ContainsKey("help") ||
@@ -125,10 +136,10 @@ namespace LowLevelDesign.Concerto
                     }
 
                     SavePemCertificate(CertificateCreator.CreateCACertificate(rootCertWithKey, certName),
-                        Environment.CurrentDirectory, certName);
+                        Environment.CurrentDirectory, certName, parsedArgs.ContainsKey("chain"));
                 } else {
                     parsedArgs.TryGetValue(string.Empty, out var hostsStr);
-                    var hosts = (hostsStr ?? "").Split(new [] { ',', ' ', '\t' }, 
+                    var hosts = (hostsStr ?? "").Split(new[] { ',', ' ', '\t' },
                         StringSplitOptions.RemoveEmptyEntries);
                     if (hosts.Length == 0) {
                         throw new CommandLineArgumentException(
@@ -137,7 +148,8 @@ namespace LowLevelDesign.Concerto
 
                     var cert = CertificateCreator.CreateCertificate(rootCertWithKey, hosts,
                         parsedArgs.ContainsKey("client"), parsedArgs.ContainsKey("ecdsa"));
-                    SavePemCertificate(cert, Environment.CurrentDirectory, SanitizeFileName(hosts[0]));
+                    SavePemCertificate(cert, Environment.CurrentDirectory, SanitizeFileName(hosts[0]),
+                        parsedArgs.ContainsKey("chain"));
                 }
                 return 0;
             } catch (Exception ex) when (ex is CommandLineArgumentException || ex is ConcertoUsageException) {

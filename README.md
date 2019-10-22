@@ -20,11 +20,12 @@ IPs and URIs are accepted too.
 
 ```
 $ concerto -int myIntCA
-$ concerto -ca myIntCA.pem www.test.com
+$ concerto -chain -ca myIntCA.pem www.test.com
 ```
 
 This will create a concertoCA.pem root certificate, an intermediate 
-CA certificate (myIntCA.pem), and a site certificate.
+CA certificate (myIntCA.pem), a site certificate (www.test.com.pem), 
+and a .pem file with a certificate trust chain (www.test.com-chain.pem).
 
 ### Available options
 
