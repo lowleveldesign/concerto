@@ -67,9 +67,18 @@ namespace LowLevelDesign.Concerto
             return certChain;
         }
 
+        private static CrlDistPoint CreateCrlDistributionPoint(string uri)
+        {
+            var gn = new GeneralName(GeneralName.UniformResourceIdentifier, uri);
+            var distributionPointname = new DistributionPointName(DistributionPointName.FullName, gn);
+            var distributionPoint = new DistributionPoint(distributionPointname, null, null);
+            return new CrlDistPoint(new[] { distributionPoint });
+        }
+
         public static CertificateChainWithPrivateKey CreateCACertificate(
             CertificateChainWithPrivateKey? issuer = null,
-            string name = "Concerto")
+            string name = "Concerto",
+            string? crlUri = null)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var secureRandom = new SecureRandom(randomGenerator);
@@ -111,7 +120,13 @@ namespace LowLevelDesign.Concerto
 
             // usage
             certificateGenerator.AddExtension(X509Extensions.KeyUsage, true,
-                new KeyUsage(KeyUsage.KeyCertSign));
+                new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.CrlSign));
+            
+            // CRL if defined
+            if (issuer != null && crlUri != null) {
+                certificateGenerator.AddExtension(X509Extensions.CrlDistributionPoints, false, 
+                    CreateCrlDistributionPoint(crlUri));
+            }
 
             var signatureFactory = new Asn1SignatureFactory("SHA256WithRSA",
                 issuer != null ? issuer.PrivateKey : keyPair.Private, secureRandom);
@@ -127,7 +142,8 @@ namespace LowLevelDesign.Concerto
             CertificateChainWithPrivateKey issuer,
             string[] hosts,
             bool client = false,
-            bool ecdsa = false)
+            bool ecdsa = false,
+            string? crlUri = null)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var secureRandom = new SecureRandom(randomGenerator);
@@ -183,10 +199,16 @@ namespace LowLevelDesign.Concerto
                         new DerSequence(subjectAlternativeNames));
                 }
             }
-            
+
+            // CRL if defined
+            if (crlUri != null) {
+                certificateGenerator.AddExtension(X509Extensions.CrlDistributionPoints, false, 
+                    CreateCrlDistributionPoint(crlUri));
+            }
+
             var signatureFactory = new Asn1SignatureFactory("SHA256WithRSA", issuer.PrivateKey, secureRandom);
             var certificate = certificateGenerator.Generate(signatureFactory);
-            
+
             return new CertificateChainWithPrivateKey(
                 BuildCertificateChain(certificate, issuer.Certificates), keyPair.Private);
         }

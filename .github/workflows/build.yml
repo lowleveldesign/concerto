@@ -3,12 +3,14 @@ name: CI
 on: [push]
 
 jobs:
-  build:
+  build-windows:
 
-    runs-on: windows-2016
+    runs-on: windows-latest
     
     steps:
     - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
 
     - uses: actions/setup-dotnet@v1
       with:
@@ -16,9 +18,47 @@ jobs:
     
     - run: dotnet publish -r win-x64 -c release
 
-    - run: dir /S
-
     - uses: actions/upload-artifact@master
       with:
         name: concerto-win64
         path: bin/release/netcoreapp3.0/win-x64/native
+
+  build-linux:
+
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.0.100' # SDK Version to use.
+    
+    - run: dotnet publish -r linux-x64 -c release
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: concerto-linux64
+        path: bin/release/netcoreapp3.0/linux-x64/native
+
+  build-macosx:
+
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+
+    - uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.0.100' # SDK Version to use.
+    
+    - run: dotnet publish -r osx-x64 -c release
+
+    - uses: actions/upload-artifact@master
+      with:
+        name: concerto-macos64
+        path: bin/release/netcoreapp3.0/osx-x64/native

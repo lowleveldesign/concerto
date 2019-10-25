@@ -32,6 +32,9 @@ and a .pem file with a certificate trust chain (www.test.com-chain.pem).
 ```
 -ca <path-to-cert>     Specifies which CA certificate to use.
 -client                Allow a client to authenticate using the certificate.
+-chain                 Create a .pem file with the certificate chain.
 -ecdsa                 Use Elliptic Curve key instead of RSA.
--help                  Shows this help screen.
+-pfx                   Save the certificate and the key in a .pfx file.
+-crl <url>             URL of the CRL distribution point.
+-help                  Shows the help screen.
 ```
