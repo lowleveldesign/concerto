@@ -127,7 +127,7 @@ namespace LowLevelDesign.Concerto
             Debug.Assert(customAttrs.Length > 0);
             Console.WriteLine($"Copyright (C) {DateTime.Today.Year} {((AssemblyCompanyAttribute)customAttrs[0]).Company}");
             Console.WriteLine();
-            Console.WriteLine("Certificates are always created in the current directory. If Root CA does ");
+            Console.WriteLine("Certificates are always created in the current directory. If Root CA does not ");
             Console.WriteLine("exist, it will be automatically created.");
             Console.WriteLine();
             Console.WriteLine("Usage examples:");
@@ -164,10 +164,9 @@ namespace LowLevelDesign.Concerto
             }
 
             try {
-                var rootCertWithKey = ReadOrCreateCA(parsedArgs.TryGetValue("ca",
-                    out var rootCertPath)
-                    ? rootCertPath
-                    : Path.Combine(Environment.CurrentDirectory, "concertoCA.pem"));
+                if (!parsedArgs.TryGetValue("ca", out var rootCertPath)) {
+                    rootCertPath = Path.Combine(Environment.CurrentDirectory, "concertoCA.pem");
+                }
                 parsedArgs.TryGetValue("crl", out var crlUri);
 
                 if (parsedArgs.ContainsKey("int")) {
@@ -177,6 +176,7 @@ namespace LowLevelDesign.Concerto
                             "-int: you need to provide a name for the intermediate certificate");
                     }
 
+                    var rootCertWithKey = ReadOrCreateCA(rootCertPath);
                     SavePemCertificate(
                         CertificateCreator.CreateCACertificate(rootCertWithKey, certName, crlUri),
                         Environment.CurrentDirectory, certName, parsedArgs.ContainsKey("chain"));
@@ -189,6 +189,7 @@ namespace LowLevelDesign.Concerto
                             "you need to provide at least one name to create a certificate");
                     }
 
+                    var rootCertWithKey = ReadOrCreateCA(rootCertPath);
                     var cert = CertificateCreator.CreateCertificate(rootCertWithKey, hosts,
                         parsedArgs.ContainsKey("client"), parsedArgs.ContainsKey("ecdsa"), crlUri);
 
