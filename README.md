@@ -1,6 +1,8 @@
 
 # concerto
 
+![](https://github.com/lowleveldesign/concerto/workflows/build/badge.svg)
+
 A command line tool to generate TLS certificates for development purposes. 
 Inspired by [mkcert](https://github.com/FiloSottile/mkcert) by Filippo Valsorda, 
 but written in C# using the [Bouncy Castle](https://www.bouncycastle.org/csharp/) 
