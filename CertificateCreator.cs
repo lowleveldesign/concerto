@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Net;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
@@ -189,12 +188,22 @@ namespace LowLevelDesign.Concerto
 
             var subjectAlternativeNames = new List<Asn1Encodable>(hosts.Length);
             foreach (var host in hosts) {
-                if (IPAddress.TryParse(host, out _)) {
-                    subjectAlternativeNames.Add(new GeneralName(GeneralName.IPAddress, host));
-                } else if (Uri.TryCreate(host, UriKind.Absolute, out _)) {
+                if (Uri.TryCreate(host, UriKind.Absolute, out _)) {
                     subjectAlternativeNames.Add(new GeneralName(GeneralName.UniformResourceIdentifier, host));
                 } else {
-                    subjectAlternativeNames.Add(new GeneralName(GeneralName.DnsName, host));
+                    var h = host.StartsWith('*') ? "_wildcard" + host[1..] : host;
+                    switch (Uri.CheckHostName(h)) {
+                        case UriHostNameType.IPv4:
+                        case UriHostNameType.IPv6:
+                            subjectAlternativeNames.Add(new GeneralName(GeneralName.IPAddress, host));
+                            break;
+                        case UriHostNameType.Dns:
+                            subjectAlternativeNames.Add(new GeneralName(GeneralName.DnsName, host));
+                            break;
+                        default:
+                            Console.WriteLine($"[warning] unrecognized host name type: {host}");
+                            break;
+                    }
                 }
             }
 
