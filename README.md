@@ -18,6 +18,14 @@ This will create a concertoCA.pem root certificate and a www.test.com.pem
 certificate for your domain. You may add multiple domains, if needed. 
 IPs and URIs are accepted too.
 
+Some more examples:
+
+```
+$ concerto localhost 127.0.0.1
+$ concerto '*.example.com' 192.168.0.12
+$ concerto https://www.example.com 192.168.0.12
+```
+
 ### Create a site certificate with an intermediate CA
 
 ```

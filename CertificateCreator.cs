@@ -191,7 +191,7 @@ namespace LowLevelDesign.Concerto
                 if (Uri.TryCreate(host, UriKind.Absolute, out _)) {
                     subjectAlternativeNames.Add(new GeneralName(GeneralName.UniformResourceIdentifier, host));
                 } else {
-                    var h = host.StartsWith('*') ? "_wildcard" + host[1..] : host;
+                    var h = host.StartsWith('*') ? "wildcard" + host[1..] : host;
                     switch (Uri.CheckHostName(h)) {
                         case UriHostNameType.IPv4:
                         case UriHostNameType.IPv6:
