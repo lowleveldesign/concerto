@@ -35,8 +35,10 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.0.100' # SDK Version to use.
-    
-    - run: CppCompilerAndLinker=clang dotnet publish -r linux-x64 -c release
+
+    - run: sudo apt-get install git clang-3.9 cmake make libc6-dev libssl-dev libkrb5-dev libcurl4-openssl-dev zlib1g-dev
+
+    - run: dotnet publish -r linux-x64 -c release
 
     - uses: actions/upload-artifact@master
       with:

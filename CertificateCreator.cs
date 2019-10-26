@@ -123,7 +123,7 @@ namespace LowLevelDesign.Concerto
                 new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.CrlSign));
             
             // CRL if defined
-            if (issuer != null && crlUri != null) {
+            if (issuer != null && crlUri != null && Uri.TryCreate(crlUri, UriKind.Absolute, out _)) {
                 certificateGenerator.AddExtension(X509Extensions.CrlDistributionPoints, false, 
                     CreateCrlDistributionPoint(crlUri));
             }
@@ -201,7 +201,7 @@ namespace LowLevelDesign.Concerto
             }
 
             // CRL if defined
-            if (crlUri != null) {
+            if (crlUri != null && Uri.TryCreate(crlUri, UriKind.Absolute, out _)) {
                 certificateGenerator.AddExtension(X509Extensions.CrlDistributionPoints, false, 
                     CreateCrlDistributionPoint(crlUri));
             }
