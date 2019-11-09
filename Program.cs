@@ -94,6 +94,7 @@ namespace LowLevelDesign.Concerto
             var directory = Path.GetDirectoryName(certPath) ?? Environment.CurrentDirectory;
             var baseName = Path.GetFileNameWithoutExtension(certPath);
             var keyPath = Path.Combine(directory, baseName + ".key");
+            certPath = Path.Combine(directory, baseName + ".pem");
 
             if (!File.Exists(keyPath) || !File.Exists(certPath)) {
                 Console.WriteLine($"[info] missing CA certificate or key, creating a new one: " +
