@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConcertoCLI", "ConcertoCLI\ConcertoCLI.csproj", "{4F4A37EF-8BFA-4268-95F9-F4F453BDB19A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Concerto", "Concerto\Concerto.csproj", "{C85AEE9B-B2A9-4A0E-B1B0-2B66EB6278DE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4F4A37EF-8BFA-4268-95F9-F4F453BDB19A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F4A37EF-8BFA-4268-95F9-F4F453BDB19A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F4A37EF-8BFA-4268-95F9-F4F453BDB19A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F4A37EF-8BFA-4268-95F9-F4F453BDB19A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C85AEE9B-B2A9-4A0E-B1B0-2B66EB6278DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C85AEE9B-B2A9-4A0E-B1B0-2B66EB6278DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C85AEE9B-B2A9-4A0E-B1B0-2B66EB6278DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C85AEE9B-B2A9-4A0E-B1B0-2B66EB6278DE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

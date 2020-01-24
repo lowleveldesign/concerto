@@ -17,11 +17,12 @@ jobs:
         dotnet-version: '3.0.100' # SDK Version to use.
     
     - run: dotnet publish -r win-x64 -c release
+      working-directory: ./ConcertoCLI
 
     - uses: actions/upload-artifact@master
       with:
         name: concerto-win64
-        path: bin/release/netcoreapp3.0/win-x64/native
+        path: ConcertoCLI/bin/release/netcoreapp3.0/win-x64/native
 
   build-linux:
 
@@ -35,15 +36,16 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.0.100' # SDK Version to use.
-
+    
     - run: sudo apt-get install git clang-3.9 cmake make libc6-dev libssl-dev libkrb5-dev libcurl4-openssl-dev zlib1g-dev
 
     - run: dotnet publish -r linux-x64 -c release
+      working-directory: ./ConcertoCLI
 
     - uses: actions/upload-artifact@master
       with:
         name: concerto-linux64
-        path: bin/release/netcoreapp3.0/linux-x64/native
+        path: ConcertoCLI/bin/release/netcoreapp3.0/linux-x64/native
 
   build-macosx:
 
@@ -59,8 +61,9 @@ jobs:
         dotnet-version: '3.0.100' # SDK Version to use.
     
     - run: dotnet publish -r osx-x64 -c release
+      working-directory: ./ConcertoCLI
 
     - uses: actions/upload-artifact@master
       with:
         name: concerto-macos64
-        path: bin/release/netcoreapp3.0/osx-x64/native
+        path: ConcertoCLI/bin/release/netcoreapp3.0/osx-x64/native

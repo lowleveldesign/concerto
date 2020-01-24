@@ -9,6 +9,7 @@
     <Company>Sebastian Solnica (@lowleveldesign)</Company>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
     <FileVersion>1.0.1.0</FileVersion>
+    <AssemblyName>concerto</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +19,14 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="1.0.0-alpha-*" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.5" />
-  </ItemGroup>
+  </ItemGroup> 
 
+  <ItemGroup>
+    <Compile Include="..\Concerto\CertificateCreator.cs">
+      <Link>CertificateCreator.cs</Link>
+    </Compile>
+    <Compile Include="..\Concerto\CertificateFileStore.cs">
+      <Link>CertificateFileStore.cs</Link>
+    </Compile>
+  </ItemGroup> 
 </Project>

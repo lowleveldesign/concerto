@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
@@ -30,7 +31,6 @@ namespace LowLevelDesign.Concerto
 
         public AsymmetricKeyParameter PrivateKey { get; }
     }
-
 
     public static class CertificateCreator
     {
@@ -66,18 +66,15 @@ namespace LowLevelDesign.Concerto
             return certChain;
         }
 
-        private static CrlDistPoint CreateCrlDistributionPoint(string uri)
-        {
-            var gn = new GeneralName(GeneralName.UniformResourceIdentifier, uri);
-            var distributionPointname = new DistributionPointName(DistributionPointName.FullName, gn);
-            var distributionPoint = new DistributionPoint(distributionPointname, null, null);
-            return new CrlDistPoint(new[] {distributionPoint});
-        }
-
+        /// <summary>
+        /// Creates a CA certificate chain.
+        /// </summary>
+        /// <param name="name">The name that should appear on the certificate in the subject field.</param>
+        /// <param name="issuer">If it's an intermediate CA, you should provide here the Root CA certificate. Otherwise, pass null.</param>
+        /// <returns>A CA certificate chain with a private key of the requested certificate.</returns>
         public static CertificateChainWithPrivateKey CreateCACertificate(
-            CertificateChainWithPrivateKey? issuer = null,
             string name = "Concerto",
-            string? crlUri = null)
+            CertificateChainWithPrivateKey? issuer = null)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var secureRandom = new SecureRandom(randomGenerator);
@@ -91,8 +88,7 @@ namespace LowLevelDesign.Concerto
             certificateGenerator.SetSerialNumber(GenerateRandomSerialNumber(secureRandom));
 
             // set subject
-            var subjectName =
-                new X509Name($"O={name} CA,OU={UserName}@{MachineName},CN={name} {UserName}@{MachineName}");
+            var subjectName = new X509Name($"O={name} CA,OU={UserName}@{MachineName},CN={name} {UserName}@{MachineName}");
             certificateGenerator.SetSubjectDN(subjectName);
 
             certificateGenerator.SetNotAfter(DateTime.UtcNow.AddYears(10));
@@ -105,8 +101,7 @@ namespace LowLevelDesign.Concerto
                 certificateGenerator.SetIssuerDN(issuer.PrimaryCertificate.SubjectDN);
                 certificateGenerator.AddExtension(X509Extensions.AuthorityKeyIdentifier, false,
                     new AuthorityKeyIdentifier(
-                        SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(issuer.PrimaryCertificate
-                            .GetPublicKey())));
+                        SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(issuer.PrimaryCertificate.GetPublicKey())));
             } else {
                 certificateGenerator.SetIssuerDN(subjectName);
             }
@@ -122,13 +117,7 @@ namespace LowLevelDesign.Concerto
             // usage
             certificateGenerator.AddExtension(X509Extensions.KeyUsage, true,
                 new KeyUsage(KeyUsage.KeyCertSign | KeyUsage.CrlSign));
-
-            // CRL if defined
-            if (issuer != null && crlUri != null && Uri.TryCreate(crlUri, UriKind.Absolute, out _)) {
-                certificateGenerator.AddExtension(X509Extensions.CrlDistributionPoints, false,
-                    CreateCrlDistributionPoint(crlUri));
-            }
-
+            
             var signatureFactory = new Asn1SignatureFactory("SHA256WithRSA",
                 issuer != null ? issuer.PrivateKey : keyPair.Private, secureRandom);
 
@@ -139,12 +128,22 @@ namespace LowLevelDesign.Concerto
                 keyPair.Private);
         }
 
+        /// <summary>
+        /// Create a certificate for domains, IP addresses, or URIs.
+        /// </summary>
+        /// <param name="issuer">The issuer certificate.</param>
+        /// <param name="hosts">
+        /// Host for which the certificate is created. Could be domains, IP addresses, or URIs.
+        /// Wildcards are supported.
+        /// </param>
+        /// <param name="client">Defines whether this certificate will be used for client authentication.</param>
+        /// <param name="ecdsa">Create Elliptic-Curve certificate.</param>
+        /// <returns></returns>
         public static CertificateChainWithPrivateKey CreateCertificate(
             CertificateChainWithPrivateKey issuer,
             string[] hosts,
             bool client = false,
-            bool ecdsa = false,
-            string? crlUri = null)
+            bool ecdsa = false)
         {
             var randomGenerator = new CryptoApiRandomGenerator();
             var secureRandom = new SecureRandom(randomGenerator);
@@ -185,13 +184,12 @@ namespace LowLevelDesign.Concerto
             extendedKeyUsages.Add(KeyPurposeID.IdKPServerAuth);
             certificateGenerator.AddExtension(X509Extensions.ExtendedKeyUsage.Id,
                 false, new ExtendedKeyUsage(extendedKeyUsages));
-
             var subjectAlternativeNames = new List<Asn1Encodable>(hosts.Length);
             foreach (var host in hosts) {
                 if (Uri.TryCreate(host, UriKind.Absolute, out _)) {
                     subjectAlternativeNames.Add(new GeneralName(GeneralName.UniformResourceIdentifier, host));
-                } else {
-                    var h = host.StartsWith('*') ? "wildcard" + host[1..] : host;
+                } else if (!string.IsNullOrEmpty(host)) {
+                    var h = host[0] == '*' ? "wildcard" + host.Substring(1) : host;
                     switch (Uri.CheckHostName(h)) {
                         case UriHostNameType.IPv4:
                         case UriHostNameType.IPv6:
@@ -201,7 +199,7 @@ namespace LowLevelDesign.Concerto
                             subjectAlternativeNames.Add(new GeneralName(GeneralName.DnsName, host));
                             break;
                         default:
-                            Console.WriteLine($"[warning] unrecognized host name type: {host}");
+                            Trace.Write($"[warning] unrecognized host name type: {host}");
                             break;
                     }
                 }
@@ -210,12 +208,6 @@ namespace LowLevelDesign.Concerto
             if (subjectAlternativeNames.Count > 0) {
                 certificateGenerator.AddExtension(X509Extensions.SubjectAlternativeName.Id, false,
                     new DerSequence(subjectAlternativeNames.ToArray()));
-            }
-
-            // CRL if defined
-            if (crlUri != null && Uri.TryCreate(crlUri, UriKind.Absolute, out _)) {
-                certificateGenerator.AddExtension(X509Extensions.CrlDistributionPoints, false,
-                    CreateCrlDistributionPoint(crlUri));
             }
 
             var signatureFactory = new Asn1SignatureFactory("SHA256WithRSA", issuer.PrivateKey, secureRandom);
