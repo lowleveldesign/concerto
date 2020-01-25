@@ -47,7 +47,7 @@ namespace LowLevelDesign.Concerto
         {
             var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pfx");
             if (File.Exists(certFilePath)) {
-                throw new InvalidOperationException("Cert file already exists. Please remove it or switch directories.");
+                throw new ArgumentException("Cert file already exists. Please remove it or switch directories.");
             }
 
             var store = new Pkcs12StoreBuilder().Build();
@@ -83,7 +83,7 @@ namespace LowLevelDesign.Concerto
             Logger.TraceInformation($"saving key to {keyFilePath}");
             Logger.TraceInformation($"saving cert to {certFilePath}");
             if (File.Exists(certFilePath) || File.Exists(keyFilePath)) {
-                throw new InvalidOperationException("Cert or key file already exists. Please remove it or switch directories.");
+                throw new ArgumentException("Cert or key file already exists. Please remove it or switch directories.");
             }
 
 

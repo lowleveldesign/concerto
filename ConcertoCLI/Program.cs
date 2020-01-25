@@ -70,7 +70,7 @@ namespace LowLevelDesign.Concerto
             Console.WriteLine("Options:");
             Console.WriteLine("  -ca <path-to-cert>     Specifies which CA certificate to use.");
             Console.WriteLine("  -client                Allow a client to authenticate using the certificate.");
-            Console.WriteLine("  -chain                 Create a .pem file with the certificate chain.");
+            Console.WriteLine("  -chain                 Add the certificate chain to the certificate file.");
             Console.WriteLine("  -ecdsa                 Use Elliptic Curve key instead of RSA.");
             Console.WriteLine("  -pfx                   Save the certificate and the key in a .pfx file.");
             Console.WriteLine("  -help                  Shows this help screen.");
@@ -123,16 +123,16 @@ namespace LowLevelDesign.Concerto
                         SanitizeFileName(hosts[0]) + extension), parsedArgs.ContainsKey("chain"));
                 }
                 return 0;
-            } catch (Exception ex) when (ex is CommandLineArgumentException) {
+            } catch (Exception ex) when (ex is CommandLineArgumentException || ex is ArgumentException) {
                 Console.WriteLine($"[error] {ex.Message}");
                 Console.WriteLine($"        {AppName.Name} -help to see usage info.");
                 return 1;
             } catch (Exception ex) {
                 Console.WriteLine($"[critical] {ex.Message}");
-                Console.WriteLine("Please report this error at https://github.com/lowleveldesign/concerto/issues, " +
+                Console.WriteLine("If this error persists, please report it at https://github.com/lowleveldesign/concerto/issues, " +
                                   "providing the below details.");
                 Console.WriteLine("=== Details ===");
-                Console.WriteLine(ex);
+                Console.WriteLine($"{ex.GetType()}: {ex.Message}");
                 Console.WriteLine();
                 Console.WriteLine($"Command line: {Environment.CommandLine}");
                 Console.WriteLine($"OS: {Environment.OSVersion}");

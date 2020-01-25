@@ -37,24 +37,23 @@ $ concerto -chain -ca myIntCA.pem www.test.com
 ```
 
 This will create a concertoCA.pem root certificate, an intermediate 
-CA certificate (myIntCA.pem), a site certificate (www.test.com.pem), 
-and a .pem file with a certificate trust chain (www.test.com-chain.pem).
+CA certificate (myIntCA.pem), a site certificate with a certificate
+trust chain (www.test.com.pem).
 
 ### Available options
 
 ```
 -ca <path-to-cert>     Specifies which CA certificate to use.
 -client                Allow a client to authenticate using the certificate.
--chain                 Create a .pem file with the certificate chain.
+-chain                 Add the certificate chain to the certificate file.
 -ecdsa                 Use Elliptic Curve key instead of RSA.
 -pfx                   Save the certificate and the key in a .pfx file.
--crl <url>             URL of the CRL distribution point.
 -help                  Shows the help screen.
 ```
 
-## Nuget package ([Concerto](https://www.nuget.org/packages/Concerto/))
+## NuGet package ([Concerto](https://www.nuget.org/packages/Concerto))
 
-The Nuget package contains two classes: `CertificateCreator` and `CertificateFileStore`:
+The NuGet package contains two classes: `CertificateCreator` and `CertificateFileStore`. They provide a straightforward API to create TLS certificates and save them to and read them from a file system.
 
 ```csharp
 public static class CertificateCreator
