@@ -37,30 +37,29 @@ $ concerto -chain -ca myIntCA.pem www.test.com
 ```
 
 This will create a concertoCA.pem root certificate, an intermediate 
-CA certificate (myIntCA.pem), a site certificate (www.test.com.pem), 
-and a .pem file with a certificate trust chain (www.test.com-chain.pem).
+CA certificate (myIntCA.pem), a site certificate with a certificate
+trust chain (www.test.com.pem).
 
 ### Available options
 
 ```
 -ca <path-to-cert>     Specifies which CA certificate to use.
 -client                Allow a client to authenticate using the certificate.
--chain                 Create a .pem file with the certificate chain.
+-chain                 Add the certificate chain to the certificate file.
 -ecdsa                 Use Elliptic Curve key instead of RSA.
 -pfx                   Save the certificate and the key in a .pfx file.
--crl <url>             URL of the CRL distribution point.
 -help                  Shows the help screen.
 ```
 
-## Nuget package ([Concerto](https://www.nuget.org/packages/Concerto/))
+## NuGet package ([Concerto](https://www.nuget.org/packages/Concerto))
 
-The Nuget package contains two classes: `CertificateCreator` and `CertificateFileStore`:
+The NuGet package contains two classes: `CertificateCreator` and `CertificateFileStore`. They provide a straightforward API to create TLS certificates and save them to and read them from a file system.
 
 ```csharp
 public static class CertificateCreator
 {
     /// <summary>
-    /// Creates a CA certificate chain.
+    /// Creates a CA certificate.
     /// </summary>
     /// <param name="name">The name that should appear on the certificate in the subject field.</param>
     /// <param name="issuer">If it's an intermediate CA, you should provide here the Root CA certificate. Otherwise, pass null.</param>
@@ -70,7 +69,7 @@ public static class CertificateCreator
         CertificateChainWithPrivateKey? issuer = null);
 
     /// <summary>
-    /// Create a certificate for domains, IP addresses, or URIs.
+    /// Create a TLS certificate.
     /// </summary>
     /// <param name="issuer">The issuer certificate.</param>
     /// <param name="hosts">
@@ -78,13 +77,13 @@ public static class CertificateCreator
     /// Wildcards are supported.
     /// </param>
     /// <param name="client">Defines whether this certificate will be used for client authentication.</param>
-    /// <param name="ecdsa">Create Elliptic-Curve certificate.</param>
+    /// <param name="ecdsa">Create a certificate with an ECDSA key.</param>
     /// <returns></returns>
     public static CertificateChainWithPrivateKey CreateCertificate(
-        CertificateChainWithPrivateKey issuer,
-        string[] hosts,
-        bool client = false,
-        bool ecdsa = false);
+            string[] hosts,
+            CertificateChainWithPrivateKey issuer,
+            bool client = false,
+            bool ecdsa = false)
 }
 ```
 

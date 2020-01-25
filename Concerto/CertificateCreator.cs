@@ -67,7 +67,7 @@ namespace LowLevelDesign.Concerto
         }
 
         /// <summary>
-        /// Creates a CA certificate chain.
+        /// Creates a CA certificate.
         /// </summary>
         /// <param name="name">The name that should appear on the certificate in the subject field.</param>
         /// <param name="issuer">If it's an intermediate CA, you should provide here the Root CA certificate. Otherwise, pass null.</param>
@@ -131,17 +131,17 @@ namespace LowLevelDesign.Concerto
         /// <summary>
         /// Create a certificate for domains, IP addresses, or URIs.
         /// </summary>
-        /// <param name="issuer">The issuer certificate.</param>
         /// <param name="hosts">
         /// Host for which the certificate is created. Could be domains, IP addresses, or URIs.
         /// Wildcards are supported.
         /// </param>
+        /// <param name="issuer">The issuer certificate.</param>
         /// <param name="client">Defines whether this certificate will be used for client authentication.</param>
-        /// <param name="ecdsa">Create Elliptic-Curve certificate.</param>
+        /// <param name="ecdsa">Create a certificate with an ECDSA key.</param>
         /// <returns></returns>
         public static CertificateChainWithPrivateKey CreateCertificate(
-            CertificateChainWithPrivateKey issuer,
             string[] hosts,
+            CertificateChainWithPrivateKey issuer,
             bool client = false,
             bool ecdsa = false)
         {

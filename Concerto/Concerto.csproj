@@ -6,12 +6,12 @@
     <Nullable>enable</Nullable>
     <RootNamespace>LowLevelDesign.Concerto</RootNamespace>
     <Company>Sebastian Solnica (@lowleveldesign)</Company>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <AssemblyName>concerto</AssemblyName>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Concerto</PackageId>
-    <PackageVersion>1.0.1</PackageVersion>
+    <PackageVersion>1.0.3</PackageVersion>
     <Title>Concerto</Title>
     <Authors>Sebastian Solnica (@lowleveldesign)</Authors>
     <Description>A library to generate TLS certificates for development purposes.</Description>
