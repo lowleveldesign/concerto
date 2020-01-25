@@ -55,66 +55,20 @@ trust chain (www.test.com.pem).
 
 The NuGet package contains two classes: `CertificateCreator` and `CertificateFileStore`. They provide a straightforward API to create TLS certificates and save them to and read them from a file system.
 
-```csharp
-public static class CertificateCreator
-{
-    /// <summary>
-    /// Creates a CA certificate.
-    /// </summary>
-    /// <param name="name">The name that should appear on the certificate in the subject field.</param>
-    /// <param name="issuer">If it's an intermediate CA, you should provide here the Root CA certificate. Otherwise, pass null.</param>
-    /// <returns>A CA certificate chain with a private key of the requested certificate.</returns>
-    public static CertificateChainWithPrivateKey CreateCACertificate(
-        string name = "Concerto",
-        CertificateChainWithPrivateKey? issuer = null);
-
-    /// <summary>
-    /// Create a TLS certificate.
-    /// </summary>
-    /// <param name="issuer">The issuer certificate.</param>
-    /// <param name="hosts">
-    /// Host for which the certificate is created. Could be domains, IP addresses, or URIs.
-    /// Wildcards are supported.
-    /// </param>
-    /// <param name="client">Defines whether this certificate will be used for client authentication.</param>
-    /// <param name="ecdsa">Create a certificate with an ECDSA key.</param>
-    /// <returns></returns>
-    public static CertificateChainWithPrivateKey CreateCertificate(
-            string[] hosts,
-            CertificateChainWithPrivateKey issuer,
-            bool client = false,
-            bool ecdsa = false)
-}
-```
+Example usage:
 
 ```csharp
-public static class CertificateFileStore
-{
-    /// <summary>
-    /// Saves certificate to a file on a disk.
-    /// </summary>
-    /// <param name="cert">A certificate to save.</param>
-    /// <param name="path">
-    /// The path to the destination file. The file extension is important and defines the format
-    /// of the encoding (currently we support only PKCS12 (.pfx) and PEM (.pem) formats). If it's PEM
-    /// a new file will be created next to the certificate file with a .key extension.
-    /// </param>
-    /// <param name="chain">
-    /// Defines whether the certificate chain should be included in the certificate file.
-    /// </param>
-    public static void SaveCertificate(
-        CertificateChainWithPrivateKey cert, 
-        string path, 
-        bool chain = false);
 
-    /// <summary>
-    /// Loads a certificate from a file.
-    /// </summary>
-    /// <param name="path">
-    /// A path to the certificate file. The format of the encoding is guessed from
-    /// the file extension. Only PKCS12 (.pfx) and PEM (.pem) formats are recognized.
-    /// </param>
-    /// <returns>The certificate representation.</returns>
-    public static CertificateChainWithPrivateKey LoadCertificate(string path);
+var workingDir = @"C:\temp";
+
+CertificateChainWithPrivateKey rootCA;
+if (File.Exists($@"{workingDir}\myCA.pem") && File.Exists($@"{workingDir}\myCA.key")) {
+    rootCA = CertificateFileStore.LoadCertificate($@"{workingDir}\myCA.pem");
+} else {
+    rootCA = CertificateCreator.CreateCACertificate("MyCA");
+    CertificateFileStore.SaveCertificate(rootCA, $@"{workingDir}\myCA.pem");
 }
+
+var cert = CertificateCreator.CreateCertificate(new [] { "www.test.com", "localhost" }, rootCA);
+CertificateFileStore.SaveCertificate(cert, $@"{workingDir}\www.test.com.pem");
 ```
