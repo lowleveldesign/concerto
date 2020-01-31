@@ -158,7 +158,7 @@ namespace LowLevelDesign.Concerto
             // set subject
             var subject = new X509Name($"O=concerto development,OU={UserName}@{MachineName},CN={hosts[0]}");
             certificateGenerator.SetSubjectDN(subject);
-            certificateGenerator.SetNotAfter(DateTime.UtcNow.AddYears(10));
+            certificateGenerator.SetNotAfter(DateTime.UtcNow.AddDays(820));
             certificateGenerator.SetNotBefore(DateTime.UtcNow);
             certificateGenerator.SetPublicKey(keyPair.Public);
 
