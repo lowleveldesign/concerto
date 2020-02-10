@@ -158,9 +158,7 @@ namespace LowLevelDesign.Concerto
             if (certPath == null) {
                 throw new ArgumentNullException($"{nameof(certPath)}");
             }
-            var directory = Path.GetDirectoryName(certPath) ?? Environment.CurrentDirectory;
-            var baseName = Path.GetFileNameWithoutExtension(certPath);
-            var keyPath = Path.Combine(directory, baseName + ".key");
+            var keyPath = Path.ChangeExtension(certPath, ".key");
 
             if (!File.Exists(keyPath)) {
                 throw new ArgumentException("The key file does not exist.");
