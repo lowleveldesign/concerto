@@ -123,7 +123,7 @@ namespace LowLevelDesign.Concerto
 
             return Path.GetExtension(path) switch {
                 var s when string.IsNullOrEmpty(s) || string.Equals(".pem", s, StringComparison.OrdinalIgnoreCase)
-                => LoadPemCertificate(path),
+                    => LoadPemCertificate(path),
                 var s when string.Equals(".pfx", s, StringComparison.OrdinalIgnoreCase) => LoadPfxCertificate(path),
                 var s => throw new ArgumentException(
                     $"Unknown certificate format: {s}. Accepted extensions for {nameof(path)} are: .pfx (PKCS12) and .pem (PEM).")
