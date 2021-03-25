@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.OpenSsl;
 using Org.BouncyCastle.X509;
@@ -21,7 +23,8 @@ namespace LowLevelDesign.Concerto
             var keyPath = Path.Combine(directory, baseName + ".key");
             certPath = Path.Combine(directory, baseName + ".pem");
 
-            if (!File.Exists(keyPath) || !File.Exists(certPath)) {
+            if (!File.Exists(keyPath) || !File.Exists(certPath))
+            {
                 Console.WriteLine($"[info] missing CA certificate or key, creating a new one: " +
                                   $"{Path.Combine(directory, baseName + ".pem")}");
                 var certWithKey = CertificateCreator.CreateCACertificate();
@@ -41,9 +44,7 @@ namespace LowLevelDesign.Concerto
 
         private static string SanitizeFileName(string host)
         {
-            return host.Replace("*", "_all")
-                .Replace(":", "_")
-                .Replace("/", "_");
+            return Path.GetInvalidFileNameChars().Aggregate(host, (host, ch) => host.Replace(ch, '_'));
         }
 
         private static void ShowInfoAndUsage()
@@ -51,7 +52,7 @@ namespace LowLevelDesign.Concerto
             Console.WriteLine($"{AppName.Name} v{AppName.Version} - creates certificates for development purposes");
             var customAttrs = AppAssembly.GetCustomAttributes(typeof(AssemblyCompanyAttribute), true);
             Debug.Assert(customAttrs.Length > 0);
-            Console.WriteLine($"Copyright (C) {DateTime.Today.Year} {((AssemblyCompanyAttribute)customAttrs[0]).Company}");
+            Console.WriteLine($"Copyright (C) 2021 {((AssemblyCompanyAttribute)customAttrs[0]).Company}");
             Console.WriteLine();
             Console.WriteLine("Certificates are always created in the current directory. If Root CA does not ");
             Console.WriteLine("exist, it will be automatically created.");
@@ -73,43 +74,83 @@ namespace LowLevelDesign.Concerto
             Console.WriteLine("  -chain                 Add the certificate chain to the certificate file.");
             Console.WriteLine("  -ecdsa                 Use Elliptic Curve key instead of RSA.");
             Console.WriteLine("  -pfx                   Save the certificate and the key in a .pfx file.");
+            Console.WriteLine("  -p                     Use a password to encrypt the certificate private key. ");
+            Console.WriteLine("                         Concerto will ask for the password.");
             Console.WriteLine("  -help                  Shows this help screen.");
             Console.WriteLine();
         }
 
+        private static string ReadUserPassword()
+        {
+            Console.Write("Password: ");
+            var buffer = new StringBuilder();
+            while (true)
+            {
+                var k = Console.ReadKey(true);
+                if (k.Key == ConsoleKey.Enter)
+                {
+                    if (buffer.Length == 0)
+                    {
+                        throw new CommandLineArgumentException("password should contain at least one character");
+                    }
+                    else
+                    {
+                        return buffer.ToString();
+                    }
+                }
+                if (k.Key == ConsoleKey.Backspace && buffer.Length > 0)
+                {
+                    buffer.Length -= 1;
+                }
+                else if (!char.IsControl(k.KeyChar))
+                {
+                    buffer.Append(k.KeyChar);
+                }
+            }
+        }
+
         private static int Main(string[] args)
         {
-            var flags = new[] { "int", "client", "ecdsa", "chain", "pfx", "h", "?", "help" };
+            var flags = new[] { "int", "client", "ecdsa", "chain", "pfx", "p", "h", "?", "help" };
             var parsedArgs = CommandLineHelper.ParseArgs(flags, args);
 
-            if (parsedArgs.ContainsKey("h") || parsedArgs.ContainsKey("help") ||
-                parsedArgs.ContainsKey("?")) {
+            if (parsedArgs.ContainsKey("h") || parsedArgs.ContainsKey("help") || parsedArgs.ContainsKey("?"))
+            {
                 ShowInfoAndUsage();
                 return 1;
             }
 
-            try {
-                if (!parsedArgs.TryGetValue("ca", out var rootCertPath)) {
+            try
+            {
+                if (!parsedArgs.TryGetValue("ca", out var rootCertPath))
+                {
                     rootCertPath = Path.Combine(Environment.CurrentDirectory, "concertoCA.pem");
                 }
 
-                if (parsedArgs.ContainsKey("int")) {
+                var password = parsedArgs.ContainsKey("p") ? ReadUserPassword() : null;
+
+                if (parsedArgs.ContainsKey("int"))
+                {
                     // we are creating intermediate certificate
-                    if (!parsedArgs.TryGetValue(string.Empty, out var certName)) {
+                    if (!parsedArgs.TryGetValue(string.Empty, out var certName))
+                    {
                         throw new CommandLineArgumentException(
                             "-int: you need to provide a name for the intermediate certificate");
                     }
-                    
+
                     var rootCertWithKey = ReadOrCreateCA(rootCertPath);
                     CertificateFileStore.SaveCertificate(
                         CertificateCreator.CreateCACertificate(certName, rootCertWithKey),
-                        Path.Combine(Environment.CurrentDirectory, certName + ".pem"),
-                        parsedArgs.ContainsKey("chain"));
-                } else {
+                        Path.Combine(Environment.CurrentDirectory, certName + ".pem"), 
+                        parsedArgs.ContainsKey("chain"), password);
+                }
+                else
+                {
                     parsedArgs.TryGetValue(string.Empty, out var hostsStr);
                     var hosts = (hostsStr ?? "").Split(new[] { ',', ' ', '\t' },
                         StringSplitOptions.RemoveEmptyEntries);
-                    if (hosts.Length == 0) {
+                    if (hosts.Length == 0)
+                    {
                         throw new CommandLineArgumentException(
                             "you need to provide at least one name to create a certificate");
                     }
@@ -120,14 +161,18 @@ namespace LowLevelDesign.Concerto
 
                     var extension = parsedArgs.ContainsKey("pfx") ? ".pfx" : ".pem";
                     CertificateFileStore.SaveCertificate(cert, Path.Combine(Environment.CurrentDirectory,
-                        SanitizeFileName(hosts[0]) + extension), parsedArgs.ContainsKey("chain"));
+                        SanitizeFileName(hosts[0]) + extension), parsedArgs.ContainsKey("chain"), password);
                 }
                 return 0;
-            } catch (Exception ex) when (ex is CommandLineArgumentException || ex is ArgumentException) {
+            }
+            catch (Exception ex) when (ex is CommandLineArgumentException || ex is ArgumentException)
+            {
                 Console.WriteLine($"[error] {ex.Message}");
                 Console.WriteLine($"        {AppName.Name} -help to see usage info.");
                 return 1;
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
                 Console.WriteLine($"[critical] {ex.Message}");
                 Console.WriteLine("If this error persists, please report it at https://github.com/lowleveldesign/concerto/issues, " +
                                   "providing the below details.");

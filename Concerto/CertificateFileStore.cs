@@ -26,27 +26,34 @@ namespace LowLevelDesign.Concerto
         /// <param name="chain">
         /// Defines whether the certificate chain should be included in the certificate file.
         /// </param>
-        public static void SaveCertificate(CertificateChainWithPrivateKey cert, string path, bool chain = false)
+        /// <param name="password">Password for encrypting the certificate private key. If null, the private key won't be encrypted.</param>
+        public static void SaveCertificate(CertificateChainWithPrivateKey cert, string path, bool chain = false, string? password = null)
         {
             var extension = Path.GetExtension(path);
             var nameWithoutExtension = Path.GetFileNameWithoutExtension(path);
             var directory = Path.GetDirectoryName(path) ?? Environment.CurrentDirectory;
 
-            if (string.IsNullOrEmpty(extension) || string.Equals(".pem", extension, StringComparison.OrdinalIgnoreCase)) {
-                SavePemCertificate(cert, directory, nameWithoutExtension, chain);
-            } else if (string.Equals(".pfx", extension, StringComparison.OrdinalIgnoreCase)) {
-                SavePkcs12Certificate(cert, directory, nameWithoutExtension, chain);
-            } else {
+            if (string.IsNullOrEmpty(extension) || string.Equals(".pem", extension, StringComparison.OrdinalIgnoreCase))
+            {
+                SavePemCertificate(cert, password, directory, nameWithoutExtension, chain);
+            }
+            else if (string.Equals(".pfx", extension, StringComparison.OrdinalIgnoreCase))
+            {
+                SavePkcs12Certificate(cert, password, directory, nameWithoutExtension, chain);
+            }
+            else
+            {
                 throw new ArgumentException(
                     $"Unknown certificate format. Accepted extensions for {nameof(path)} are: .pfx (PKCS12) and .pem (PEM).");
             }
         }
 
-        private static void SavePkcs12Certificate(CertificateChainWithPrivateKey certChainWithKey,
+        private static void SavePkcs12Certificate(CertificateChainWithPrivateKey certChainWithKey, string? password,
             string directory, string nameWithoutExtension, bool chain)
         {
             var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pfx");
-            if (File.Exists(certFilePath)) {
+            if (File.Exists(certFilePath))
+            {
                 throw new ArgumentException("Cert file already exists. Please remove it or switch directories.");
             }
 
@@ -54,11 +61,13 @@ namespace LowLevelDesign.Concerto
 
             // cert chain
             var chainLen = 1;
-            if (chain) {
+            if (chain)
+            {
                 chainLen = certChainWithKey.Certificates.Length;
             }
 
-            for (var i = 0; i < chainLen; i++) {
+            for (var i = 0; i < chainLen; i++)
+            {
                 var cert = certChainWithKey.Certificates[i];
                 var certEntry = new X509CertificateEntry(cert);
                 store.SetCertificateEntry(cert.SubjectDN.ToString(), certEntry);
@@ -71,10 +80,10 @@ namespace LowLevelDesign.Concerto
                 new[] { new X509CertificateEntry(primaryCert) });
 
             using var stream = File.OpenWrite(certFilePath);
-            store.Save(stream, null, new SecureRandom());
+            store.Save(stream, password?.ToCharArray(), new SecureRandom());
         }
 
-        private static void SavePemCertificate(CertificateChainWithPrivateKey certChainWithKey,
+        private static void SavePemCertificate(CertificateChainWithPrivateKey certChainWithKey, string? password,
             string directory, string nameWithoutExtension, bool chain)
         {
             var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pem");
@@ -82,28 +91,36 @@ namespace LowLevelDesign.Concerto
 
             Logger.TraceInformation($"saving key to {keyFilePath}");
             Logger.TraceInformation($"saving cert to {certFilePath}");
-            if (File.Exists(certFilePath) || File.Exists(keyFilePath)) {
+            if (File.Exists(certFilePath) || File.Exists(keyFilePath))
+            {
                 throw new ArgumentException("Cert or key file already exists. Please remove it or switch directories.");
             }
 
 
             Debug.Assert(certChainWithKey.Certificates.Length > 0);
-            if (chain) {
+            if (chain)
+            {
                 using var writer = new StreamWriter(certFilePath);
                 var pem = new PemWriter(writer);
-                foreach (var cert in certChainWithKey.Certificates) {
+                foreach (var cert in certChainWithKey.Certificates)
+                {
                     pem.WriteObject(cert);
                 }
-            } else {
+            }
+            else
+            {
                 using var writer = new StreamWriter(certFilePath);
                 var pem = new PemWriter(writer);
                 pem.WriteObject(certChainWithKey.Certificates[0]);
             }
 
-            using (var writer = new StreamWriter(keyFilePath)) {
+            using (var writer = new StreamWriter(keyFilePath))
+            {
                 var pem = new PemWriter(writer);
-                var keyPkcs8Format = new Pkcs8Generator(certChainWithKey.PrivateKey);
-                pem.WriteObject(keyPkcs8Format);
+                var pemObjGenerator = password == null ?
+                    (Org.BouncyCastle.Utilities.IO.Pem.PemObjectGenerator)new Pkcs8Generator(certChainWithKey.PrivateKey) :
+                    new MiscPemGenerator(certChainWithKey.PrivateKey, "AES-256-CBC", password.ToCharArray(), new SecureRandom());
+                pem.WriteObject(pemObjGenerator);
             }
         }
 
@@ -117,7 +134,8 @@ namespace LowLevelDesign.Concerto
         /// <returns>The certificate representation.</returns>
         public static CertificateChainWithPrivateKey LoadCertificate(string path)
         {
-            if (!File.Exists(path)) {
+            if (!File.Exists(path))
+            {
                 throw new ArgumentException($"The certificate file: '{path}' does not exist.");
             }
 
@@ -132,7 +150,8 @@ namespace LowLevelDesign.Concerto
 
         private static CertificateChainWithPrivateKey LoadPfxCertificate(string certPath)
         {
-            if (certPath == null) {
+            if (certPath == null)
+            {
                 throw new ArgumentNullException($"{nameof(certPath)}");
             }
             using var certStream = File.OpenRead(certPath);
@@ -140,13 +159,15 @@ namespace LowLevelDesign.Concerto
             store.Load(certStream, null);
 
             var aliases = store.Aliases.Cast<String>().ToArray();
-            if (aliases.Length == 0) {
+            if (aliases.Length == 0)
+            {
                 throw new ArgumentException("Invalid .pfx cert (no aliases)");
             }
 
             var certEntries = store.GetCertificateChain(aliases[0]);
             var certificates = new X509Certificate[certEntries.Length];
-            for (var i = 0; i < certEntries.Length; i++) {
+            for (var i = 0; i < certEntries.Length; i++)
+            {
                 certificates[i] = certEntries[i].Certificate;
             }
 
@@ -155,12 +176,14 @@ namespace LowLevelDesign.Concerto
 
         private static CertificateChainWithPrivateKey LoadPemCertificate(string certPath)
         {
-            if (certPath == null) {
+            if (certPath == null)
+            {
                 throw new ArgumentNullException($"{nameof(certPath)}");
             }
             var keyPath = Path.ChangeExtension(certPath, ".key");
 
-            if (!File.Exists(keyPath)) {
+            if (!File.Exists(keyPath))
+            {
                 throw new ArgumentException("The key file does not exist.");
             }
 
