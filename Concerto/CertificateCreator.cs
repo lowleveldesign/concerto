@@ -124,7 +124,7 @@ namespace LowLevelDesign.Concerto
             var certificate = certificateGenerator.Generate(signatureFactory);
 
             return new CertificateChainWithPrivateKey(
-                BuildCertificateChain(certificate, issuer?.Certificates ?? new X509Certificate[0]),
+                BuildCertificateChain(certificate, issuer?.Certificates ?? Array.Empty<X509Certificate>()),
                 keyPair.Private);
         }
 
@@ -189,7 +189,7 @@ namespace LowLevelDesign.Concerto
                 if (Uri.TryCreate(host, UriKind.Absolute, out _)) {
                     subjectAlternativeNames.Add(new GeneralName(GeneralName.UniformResourceIdentifier, host));
                 } else if (!string.IsNullOrEmpty(host)) {
-                    var h = host[0] == '*' ? "wildcard" + host.Substring(1) : host;
+                    var h = host[0] == '*' ? "wildcard" + host[1..] : host;
                     switch (Uri.CheckHostName(h)) {
                         case UriHostNameType.IPv4:
                         case UriHostNameType.IPv6:
