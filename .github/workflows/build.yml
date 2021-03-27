@@ -15,6 +15,9 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '5.0.x' # SDK Version to use.
+
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
     
     - run: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI
@@ -37,6 +40,9 @@ jobs:
       with:
         dotnet-version: '5.0.x' # SDK Version to use.
 
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
+
     - run: dotnet publish -c release -r linux-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI
 
@@ -57,6 +63,9 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '5.0.x' # SDK Version to use.
+
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
     
     - run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI
