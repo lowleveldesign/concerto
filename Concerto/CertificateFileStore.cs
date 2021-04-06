@@ -32,7 +32,7 @@ namespace LowLevelDesign.Concerto
             var extension = Path.GetExtension(path);
 
             if (string.IsNullOrEmpty(extension) || string.Equals(".pem", extension, StringComparison.OrdinalIgnoreCase)
-                || string.Equals(".der", extension, StringComparison.OrdinalIgnoreCase))
+                || string.Equals(".cer", extension, StringComparison.OrdinalIgnoreCase))
             {
                 SavePemCertificate(cert, password, path, chain);
             }
@@ -43,7 +43,7 @@ namespace LowLevelDesign.Concerto
             else
             {
                 throw new ArgumentException(
-                    $"Unknown certificate format. Accepted extensions for {nameof(path)} are: .pfx (PKCS12) and .pem (PEM).");
+                    $"Unknown certificate format. Accepted extensions for {nameof(path)} are: .pfx (PKCS12), .pem, or .cer (PEM).");
             }
         }
 
