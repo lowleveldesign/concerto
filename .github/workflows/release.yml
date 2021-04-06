@@ -49,7 +49,7 @@ jobs:
     - run: dotnet build -c release
       working-directory: ./Concerto
 
-    - run: dotnet nuget push -s nuget.org -k "$NUGET_KEY" Concerto.*.nupkg
+    - run: dotnet nuget push -s https://api.nuget.org/v3/index.json -k "$NUGET_KEY" Concerto.*.nupkg
       env:
         NUGET_KEY: ${{ secrets.NUGET_KEY }}
       working-directory: ./Concerto/bin/release
