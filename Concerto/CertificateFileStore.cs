@@ -20,7 +20,7 @@ namespace LowLevelDesign.Concerto
         /// <param name="cert">A certificate to save.</param>
         /// <param name="path">
         /// The path to the destination file. The file extension is important and defines the format
-        /// of the encoding (currently we support only PKCS12 (.pfx) and PEM (.pem) formats). If it's PEM
+        /// of the encoding (currently we support only PKCS12 (.pfx) and PEM (.pem, .cer) formats). If it's PEM
         /// a new file will be created next to the certificate file with a .key extension.
         /// </param>
         /// <param name="chain">
@@ -126,7 +126,7 @@ namespace LowLevelDesign.Concerto
         /// </summary>
         /// <param name="path">
         /// A path to the certificate file. The format of the encoding is guessed from
-        /// the file extension. Only PKCS12 (.pfx) and PEM (.pem) formats are recognized.
+        /// the file extension. Only PKCS12 (.pfx) and PEM (.pem, .cer) formats are recognized.
         /// </param>
         /// <returns>The certificate representation.</returns>
         public static CertificateChainWithPrivateKey LoadCertificate(string path)
@@ -138,6 +138,7 @@ namespace LowLevelDesign.Concerto
 
             return Path.GetExtension(path) switch {
                 var s when string.IsNullOrEmpty(s) || string.Equals(".pem", s, StringComparison.OrdinalIgnoreCase)
+                                                   || string.Equals(".cer", s, StringComparison.OrdinalIgnoreCase)
                     => LoadPemCertificate(path),
                 var s when string.Equals(".pfx", s, StringComparison.OrdinalIgnoreCase) => LoadPfxCertificate(path),
                 var s => throw new ArgumentException(
