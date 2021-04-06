@@ -5,12 +5,12 @@
     <Nullable>enable</Nullable>
     <RootNamespace>LowLevelDesign.Concerto</RootNamespace>
     <Company>Sebastian Solnica (@lowleveldesign)</Company>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <AssemblyName>concerto</AssemblyName>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageId>Concerto</PackageId>
-    <PackageVersion>1.1.0</PackageVersion>
+    <PackageVersion>1.0.0.0</PackageVersion>
     <Title>Concerto</Title>
     <Authors>Sebastian Solnica (@lowleveldesign)</Authors>
     <Description>A library to generate TLS certificates for development purposes.</Description>
@@ -21,7 +21,16 @@
     <PackageTags>x509, https, tls, certificate</PackageTags>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
   <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
   </ItemGroup>
 

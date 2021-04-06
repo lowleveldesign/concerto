@@ -1,6 +1,9 @@
-name: build
+name: release
 
-on: [push]
+on: 
+  push:
+    tags:
+      - '*'
 
 jobs:
   build-windows:
@@ -15,6 +18,9 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '5.0.x' # SDK Version to use.
+
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
     
     - run: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI
@@ -37,6 +43,17 @@ jobs:
       with:
         dotnet-version: '5.0.x' # SDK Version to use.
 
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
+
+    - run: dotnet build -c release
+      working-directory: ./Concerto
+
+    - run: dotnet nuget push -s nuget.org -k "$NUGET_KEY" Concerto.*.nupkg
+      env:
+        NUGET_KEY: ${{ secrets.NUGET_KEY }}
+      working-directory: ./Concerto/bin/release
+
     - run: dotnet publish -c release -r linux-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI
 
@@ -57,6 +74,9 @@ jobs:
     - uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '5.0.x' # SDK Version to use.
+
+    - run: scripts/Update-AssemblyInfoVersionFiles.ps1
+      shell: pwsh
     
     - run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI

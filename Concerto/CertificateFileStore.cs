@@ -30,16 +30,15 @@ namespace LowLevelDesign.Concerto
         public static void SaveCertificate(CertificateChainWithPrivateKey cert, string path, bool chain = false, string? password = null)
         {
             var extension = Path.GetExtension(path);
-            var nameWithoutExtension = Path.GetFileNameWithoutExtension(path);
-            var directory = Path.GetDirectoryName(path) ?? Environment.CurrentDirectory;
 
-            if (string.IsNullOrEmpty(extension) || string.Equals(".pem", extension, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(extension) || string.Equals(".pem", extension, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(".der", extension, StringComparison.OrdinalIgnoreCase))
             {
-                SavePemCertificate(cert, password, directory, nameWithoutExtension, chain);
+                SavePemCertificate(cert, password, path, chain);
             }
             else if (string.Equals(".pfx", extension, StringComparison.OrdinalIgnoreCase))
             {
-                SavePkcs12Certificate(cert, password, directory, nameWithoutExtension, chain);
+                SavePkcs12Certificate(cert, password, path, chain);
             }
             else
             {
@@ -49,9 +48,8 @@ namespace LowLevelDesign.Concerto
         }
 
         private static void SavePkcs12Certificate(CertificateChainWithPrivateKey certChainWithKey, string? password,
-            string directory, string nameWithoutExtension, bool chain)
+            string certFilePath, bool chain)
         {
-            var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pfx");
             if (File.Exists(certFilePath))
             {
                 throw new ArgumentException("Cert file already exists. Please remove it or switch directories.");
@@ -84,10 +82,9 @@ namespace LowLevelDesign.Concerto
         }
 
         private static void SavePemCertificate(CertificateChainWithPrivateKey certChainWithKey, string? password,
-            string directory, string nameWithoutExtension, bool chain)
+            string certFilePath, bool chain)
         {
-            var certFilePath = Path.Combine(directory, $"{nameWithoutExtension}.pem");
-            var keyFilePath = Path.Combine(directory, $"{nameWithoutExtension}.key");
+            var keyFilePath = Path.ChangeExtension(certFilePath, ".key");
 
             Logger.TraceInformation($"saving key to {keyFilePath}");
             Logger.TraceInformation($"saving cert to {certFilePath}");

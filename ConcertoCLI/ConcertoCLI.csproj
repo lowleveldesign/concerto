@@ -6,8 +6,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>LowLevelDesign.Concerto</RootNamespace>
     <Company>Sebastian Solnica (@lowleveldesign)</Company>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <AssemblyName>concerto</AssemblyName>
   </PropertyGroup>
 
