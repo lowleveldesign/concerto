@@ -3,28 +3,7 @@ name: build
 on: [push]
 
 jobs:
-  build-windows:
-
-    runs-on: windows-latest
-    
-    steps:
-    - uses: actions/checkout@main
-      with:
-        fetch-depth: 1
-
-    - uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '5.0.x' # SDK Version to use.
-    
-    - run: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
-      working-directory: ./ConcertoCLI
-
-    - uses: actions/upload-artifact@main
-      with:
-        name: concerto-win64
-        path: ConcertoCLI/bin/release/net5.0/win-x64/publish
-
-  build-linux:
+  build-all:
 
     runs-on: ubuntu-latest
     
@@ -39,27 +18,22 @@ jobs:
 
     - run: dotnet publish -c release -r linux-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
       working-directory: ./ConcertoCLI
+    
+    - run: dotnet publish -c release -r win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
+      working-directory: ./ConcertoCLI
+    
+    - run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
+      working-directory: ./ConcertoCLI
 
     - uses: actions/upload-artifact@main
       with:
         name: concerto-linux64
         path: ConcertoCLI/bin/release/net5.0/linux-x64/publish
 
-  build-macosx:
-
-    runs-on: macos-latest
-    
-    steps:
-    - uses: actions/checkout@main
+    - uses: actions/upload-artifact@main
       with:
-        fetch-depth: 1
-
-    - uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '5.0.x' # SDK Version to use.
-    
-    - run: dotnet publish -c release -r osx-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true  -p:IncludeNativeLibrariesForSelfExtract=true
-      working-directory: ./ConcertoCLI
+        name: concerto-win64
+        path: ConcertoCLI/bin/release/net5.0/win-x64/publish
 
     - uses: actions/upload-artifact@main
       with:
